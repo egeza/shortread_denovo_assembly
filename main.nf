@@ -45,8 +45,9 @@ include {stride_run  } from "${projectDir}/modules/stride"
 include {mean_std  } from "${projectDir}/modules/meanstd"
 include {masurca_run  } from "${projectDir}/modules/masurca"
 include {platanus_run  } from "${projectDir}/modules/platanus"
+include {integratecontigs  } from "${projectDir}/modules/cisa"
+include {qcmetrics_quast  } from "${projectDir}/modules/quast"
 include { multiqc } from "${projectDir}/modules/multiqc" 
-//include { identifybestkmer as identifybestkmer_minia; identifybestkmer as identifybestkmer_soap; identifybestkmer as identifybestkmer_abyss} from "${projectDir}/modules/best-k" 
 include { identifybestkmer } from "${projectDir}/modules/best-k" 
 
 // Running a workflow with the defined processes here.  
@@ -81,7 +82,6 @@ workflow {
 
  //MASURCA mean_std for calculating avg_ins and std
   mean_std(trimmomatic.out.paired_fastq)
-  //mean_std.out.meanstdout.view()
   masurca_run(mean_std.out.meanstdout)
 
  //VELVET
@@ -93,4 +93,30 @@ workflow {
     .collect()
   multiqc(multiqc_input)
  
+ // Concatenate or produce a tuple of assemble to ensure they are integrated well in CISA
+ cisa_input = velvet_run.out.velvetout.concat(
+		masurca_run.out.masurcaout,
+		spades_run.out.spadesout,
+		stride_run.out.strideout,
+		platanus_run.out.platanusout,
+		soapdenovo_run.out.soapdenovoout,
+		minia_run.out.miniaout
+		)
+  
+  integratecontigs(cisa_input)
+	//.groupTuple(sort: true, size: 7)
+	//.into { grouped_assembly_contigs }
+
+  //Evaluate the assemblies
+  quast_input = velvet_run.out.velvetout.concat(
+		masurca_run.out.masurcaout,
+		spades_run.out.spadesout,
+		stride_run.out.strideout,
+		platanus_run.out.platanusout,
+		soapdenovo_run.out.soapdenovoout,
+		minia_run.out.miniaout,
+		integratecontigs.out.cisaintegratedcontigs
+		)
+  qcmetrics_quast(quast_input)
+  //velvet_run.out.velvetout.concat(
 }

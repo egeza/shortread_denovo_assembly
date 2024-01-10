@@ -1,5 +1,5 @@
 process masurca_run {
-    publishDir "${params.outdir}/masurcaOut/${sample}/", mode: 'copy', overwrite: true
+    publishDir "${params.outdir}/masurcaOut/", mode: 'copy', overwrite: true
     label 'high_masurca'
     //container '/cbio/projects/026/images/denovo_assemblers_latest-2023-07-03-ee279da8a081.simg'
     tag "${sample}"
@@ -8,10 +8,11 @@ process masurca_run {
     tuple val(sample), val(reads), path(meanstdfile)
     
     output:
-    tuple val(sample), path("CA/*.genome.scf.fasta"), path("test_var.txt"), emit: masurcaout
+    tuple val(sample), path("${sample}_masurca-contig.fa"), emit: masurcaout
    
-    script:
+    shell:
     """
+    #!/bin/sh
     masurca -g masurca_config
     frag_mean=\$(cat ${meanstdfile} | head -1)
     frag_std=\$(cat ${meanstdfile}  | tail -1)
@@ -30,5 +31,10 @@ process masurca_run {
     sed -i "s|FLYE_ASSEMBLY=1|#FLYE_ASSEMBLY=1|g" masurca_config 
     masurca masurca_config
     ./assemble.sh
+    if [ -f CA/final.genome.scf.fasta ]; then
+        mv CA/final.genome.scf.fasta ${sample}_masurca-contig.fa
+    else
+        mv CA/primary.genome.scf.fasta ${sample}_masurca-contig.fa
+    fi
     """
 }

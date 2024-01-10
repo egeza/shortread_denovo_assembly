@@ -10,7 +10,7 @@
 #SBATCH --mail-type=FAIL
 
 
-echo "StriDe Minia Velvet Spades"
+echo "Assmbly Started"
 
 # Set important dirs
 proj="/cbio/projects/026/"
